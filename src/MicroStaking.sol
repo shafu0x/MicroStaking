@@ -23,8 +23,10 @@ contract MicroStaking {
         uint timeElapsed = block.timestamp - lastUpdate;
         lastUpdate       = block.timestamp;
         uint minted      = timeElapsed * ratePerSecond;
-        rewardPerShare += (minted * 1e18) / token.balanceOf(address(this));
-        token.mint(address(this), minted);
+        uint totalStaked = token.balanceOf(address(this));
+        if (totalStaked > 0) rewardPerShare += (minted * 1e18) / totalStaked; 
+        uint rewards = staked[msg.sender] * rewardPerShare / 1e18 - debt[msg.sender];
+        token.mint(msg.sender, rewards);
         _;
     }
 
@@ -37,17 +39,12 @@ contract MicroStaking {
     function stake(uint amount) external update {
         token.transferFrom(msg.sender, address(this), amount);
         staked[msg.sender] += amount;
-        debt  [msg.sender] += staked[msg.sender] * rewardPerShare / 1e18;
+        debt  [msg.sender] = staked[msg.sender] * rewardPerShare / 1e18;
     }
 
     function unstake() external update {
-        token.burn(address(this), staked[msg.sender]);
-        debt  [msg.sender] += staked[msg.sender] * rewardPerShare / 1e18;
+        token.transfer(msg.sender, staked[msg.sender]);
+        debt  [msg.sender] = staked[msg.sender] * rewardPerShare / 1e18;
         staked[msg.sender] = 0;
-    }
-
-    function _claim(address user) internal update {
-        uint rewards = staked[user] * rewardPerShare / 1e18 - debt[user];
-        token.transfer(user, rewards);
     }
 }
