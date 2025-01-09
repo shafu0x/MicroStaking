@@ -5,8 +5,8 @@ import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {Owned} from "lib/solmate/src/auth/Owned.sol";
 
 contract Token is ERC20("shafu Token", "ST", 18), Owned(msg.sender) {
-    function mint(address to, uint amount) external onlyOwner { _mint(to, amount); }
-    function burn(address to, uint amount) external onlyOwner { _burn(from, amount); }
+    function mint(address to,   uint amount) external onlyOwner { _mint(to,   amount); }
+    function burn(address from, uint amount) external onlyOwner { _burn(from, amount); }
 }
 
 contract MicroStaking {
@@ -23,6 +23,7 @@ contract MicroStaking {
         uint timeElapsed = block.timestamp - lastUpdate;
         lastUpdate       = block.timestamp;
         uint minted      = timeElapsed * ratePerSecond;
+        rewardPerShare += (minted * 1e18) / token.balanceOf(address(this));
         token.mint(address(this), minted);
         _;
     }
@@ -40,7 +41,7 @@ contract MicroStaking {
     }
 
     function unstake() external update {
-        token.burn(msg.sender, staked[msg.sender]);
+        token.burn(address(this), staked[msg.sender]);
         debt  [msg.sender] += staked[msg.sender] * rewardPerShare / 1e18;
         staked[msg.sender] = 0;
     }
