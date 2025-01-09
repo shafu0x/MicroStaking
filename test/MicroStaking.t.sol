@@ -23,7 +23,7 @@ contract MicroStaking_Test is Test {
 
     function test_staking() public {
         uint bobAmount   = 100e18;
-        uint aliceAmount = 300e18;
+        uint aliceAmount = 100e18;
 
         deal(address(token), bob,   bobAmount);
         deal(address(token), alice, aliceAmount);
@@ -47,5 +47,39 @@ contract MicroStaking_Test is Test {
         vm.prank(alice);
         staking.unstake();
         assertTrue(token.balanceOf(alice) > aliceAmount);
+
+        console.log(token.balanceOf(bob));
+        console.log(token.balanceOf(alice));
+    }
+
+    function test_staking_differentTimes() public {
+        uint bobAmount   = 100e18;
+        uint aliceAmount = 100e18;
+
+        deal(address(token), bob,   bobAmount);
+        deal(address(token), alice, aliceAmount);
+
+        vm.startPrank(bob);
+        token.approve(address(staking), bobAmount);
+        staking.stake(bobAmount);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 1 days);
+
+        vm.startPrank(alice);
+        token.approve(address(staking), aliceAmount);
+        staking.stake(aliceAmount);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 1 days);
+
+        vm.prank(bob);
+        staking.unstake();
+
+        vm.prank(alice);
+        staking.unstake();
+
+        console.log(token.balanceOf(bob));
+        console.log(token.balanceOf(alice));
     }
 }
